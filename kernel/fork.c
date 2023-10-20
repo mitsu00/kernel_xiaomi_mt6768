@@ -2241,6 +2241,10 @@ struct task_struct *fork_idle(int cpu)
 	return task;
 }
 
+#ifdef CONFIG_KPROFILES
+extern int kp_active_mode(void);
+#endif
+
 /*
  *  Ok, this is the main fork-routine.
  *
@@ -2257,6 +2261,29 @@ long _do_fork(unsigned long clone_flags,
 	struct task_struct *p;
 	int trace = 0;
 	long nr;
+
+ #ifdef CONFIG_KPROFILES
+   /*
+    * Boost CPU and DDR for 60ms if performance mode is active.
+    * Boost CPU and DDR for 50ms if default mode is active to retain default behaviour.
+    * Boost CPU & DDR for 25ms if balanced profile is enabled
+    * Dont boost CPU & DDR if battery saver profile is enabled
+    */
+       switch (kp_active_mode()) {
+       case 0:
+           break;
+       case 2:
+           break;
+       case 3:
+           break;
+       default:
+           pr_info("Battery Profile Active, Skipping Boost...\n");
+           break;
+       }
+ #else
+           pr_info("Battery Profile Active, Skipping Boost...\n");
+ #endif
+
 
 	/*
 	 * Determine whether and which event to report to ptracer.  When
